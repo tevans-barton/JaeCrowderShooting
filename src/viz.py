@@ -126,12 +126,41 @@ def plot_ts_by_game(df, player_name, download = False):
     #Plot the player's TS
     df_to_plot = analysis.get_ts_by_game(df)
     plt.bar(df_to_plot.index, df_to_plot['TS'], color=BUCKS_GREEN, label=player_name)
-    plt.xlabel('Game Number', fontsize = 15)
+    plt.xlabel('Game in Series', fontsize = 15)
     plt.xticks(df_to_plot.index.unique())
     plt.ylabel('True Shooting Percentage', fontsize= 15)
     plt.title('{p} Playoff True Shooting by Game in Series'.format(p = player_name), fontsize = 20)
     if download:
         plt.savefig('../visualizations/{p}_ts_by_game.png'.format(p = player_name.replace(' ', '')))
+    plt.show()
+
+def plot_year_series_heatmap(df, player_name, download = False):
+    '''
+    Plots a heatmap of the true shooting percentage for a player in each series in each year
+
+    Arguments:
+        df : pd.DataFrame, the dataframe containing the gamelogs. Expects dataframe of the form returned by etl.get_gamelogs()
+        player_name : str, the name of the player
+        download : bool, whether or not to save the plot to the visualizations folder, defaults to False
+
+    Returns:
+        None
+    '''
+    df_to_plot = analysis.get_ts_by_year_and_round(df)
+    plt.figure(figsize=(12,8))
+    #Plot the heatmap
+    map = sns.diverging_palette(10, 133, as_cmap=True)
+    map.set_bad(color = '#36454F')
+    #map = sns.light_palette(BUCKS_GREEN)
+    ax = sns.heatmap(df_to_plot, cmap=map, annot=True, fmt='.3f', cbar=False, center=SF_AVG_TS)
+    ax.xaxis.tick_top()
+    ax.xaxis.set_label_position('top')
+    plt.xlabel('Series', fontsize = 15, loc='center')
+    plt.ylabel('Year', fontsize= 15)
+    plt.yticks(rotation=0)
+    plt.title('{p} Playoff True Shooting by Year and Round'.format(p = player_name), fontsize = 20)
+    if download:
+        plt.savefig('../visualizations/{p}_ts_by_year_round_heatmap.png'.format(p = player_name.replace(' ', '')))
     plt.show()
 
 def plot_game_series_heatmap(df, player_name, download = False):

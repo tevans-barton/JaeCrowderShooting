@@ -17,6 +17,16 @@ PF_AVG_TS = .585
 
 TS_NEEDED_COLUMNS = ['PTS', 'FGA', 'FTA']
 
+ROUND_MAP = {
+    'EC1' : 'FIRST ROUND',
+    'WC1' : 'FIRST ROUND',
+    'ECS' : 'CONFERENCE SEMIFINALS',
+    'WCS' : 'CONFERENCE SEMIFINALS',
+    'ECF' : 'CONFERENCE FINALS',
+    'WCF' : 'CONFERENCE FINALS',
+    'FIN' : 'FINALS',
+}
+
 def get_ts_by_year(df):
     '''
     Calculates the true shooting percentage for each year in the playoffs
@@ -77,6 +87,24 @@ def get_ts_by_series_and_game(df):
     #THIS WAY RIGHT PROBABLY
     ts_by_series_and_game = df[['Series', 'G#'] + TS_NEEDED_COLUMNS].groupby(['Series', 'G#']).apply(lambda x: calculate_groupby_ts(x)).unstack() 
     return ts_by_series_and_game
+
+def get_ts_by_year_and_round(df):
+    '''
+    Calculates the true shooting percentage mean for each series in each year in the playoffs
+
+    Arguments:
+        df : pd.DataFrame, the dataframe containing the gamelogs. Expects dataframe of the form returned by etl.get_gamelogs()
+
+    Returns:
+        ts_by_series_and_year : pd.DataFrame, the dataframe containing the true shooting percentage for each playoff series and year
+    '''
+    df_copy = df.copy()
+    df_copy['Round'] = df_copy['Series'].map(ROUND_MAP)
+    #Make the series column categorical and ordered
+    ROUND_ORDER = ['FIRST ROUND', 'CONFERENCE SEMIFINALS', 'CONFERENCE FINALS', 'FINALS']
+    df_copy['Round'] = pd.Categorical(df_copy['Round'], categories=ROUND_ORDER, ordered=True)
+    ts_by_series_and_year = df_copy[['Round', 'Year'] + TS_NEEDED_COLUMNS].groupby(['Year', 'Round']).apply(lambda x: calculate_groupby_ts(x)).unstack() 
+    return ts_by_series_and_year
 
 def get_ts_by_home_away(df):
     '''
