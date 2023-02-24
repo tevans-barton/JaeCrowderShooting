@@ -30,6 +30,8 @@ TEAM_COLORS_FOR_BAR_PLOTS = {
     'MIA' : '#98002E',
     'PHO' : '#E56020',
     'MIL' : BUCKS_GREEN,
+    'HOU' : '#CE1141',
+    'TOR' : '#753BBD'
 }
 
 

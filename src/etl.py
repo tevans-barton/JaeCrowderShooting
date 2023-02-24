@@ -49,17 +49,25 @@ def __clean_gamelog(gamelog_df):
     #Drop rows where the player did not play any minutes
     player_gamelog_df = player_gamelog_df[player_gamelog_df['MP'].notnull()].reset_index(drop = True)
 
+
+    #Split the result column into a win/loss column and a point differential column
+    result_column = player_gamelog_df['Result']
+    player_gamelog_df['Result'] = result_column.str.extract(r'(W|L)')
+    player_gamelog_df['Point Differential'] = result_column.str.extract(r'\(([\-\+]\d+)\)')
     #Convert numeric columns to numeric type
     player_gamelog_df = player_gamelog_df.apply(lambda x : pd.to_numeric(x, errors='ignore'))
     #Make Date column a datetime object
     player_gamelog_df['Date'] = pd.to_datetime(player_gamelog_df['Date']).dt.date
     #Create a year column
     player_gamelog_df['Year'] = pd.to_datetime(player_gamelog_df['Date']).dt.year
-    #Reorder columns
-    player_gamelog_df = player_gamelog_df[['Date', 'Year'] + [x for x in player_gamelog_df.columns if x not in ['Date', 'Year']]]
     
     #Make the series column categorical and ordered
     SERIES_ORDER = ['EC1', 'WC1', 'ECS', 'WCS', 'ECF', 'WCF', 'FIN']
     player_gamelog_df['Series'] = pd.Categorical(player_gamelog_df['Series'], categories=SERIES_ORDER, ordered=True)
+    
     player_gamelog_df['TS'] = player_gamelog_df.apply(lambda x : calculate_true_shooting(x), axis = 1)
+
+    #Reorder columns
+    FIRST_HALF_COLUMNS = ['Date', 'Year', 'G', 'Series', 'Tm', 'Home/Away', 'Opp', 'G#', 'Result', 'Point Differential']
+    player_gamelog_df = player_gamelog_df[FIRST_HALF_COLUMNS + [x for x in player_gamelog_df.columns if x not in FIRST_HALF_COLUMNS]]
     return player_gamelog_df

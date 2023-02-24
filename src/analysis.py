@@ -2,19 +2,19 @@ import numpy as np
 import pandas as pd
 import logging
 from helper_functions import calculate_groupby_ts
+
 logging.basicConfig(filename='../logger.log', format='%(asctime)s %(levelname)s:%(name)s :: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', encoding='utf-8', level=logging.DEBUG)
 Logger = logging.getLogger(__name__)
 
 #Equation I've been tinkering with
 #plt.hist(((crowder_df['TS'] - crowder_df['TS'].mean()) * (crowder_df['FGA'] + crowder_df['FTA'] / 2) + (crowder_df['TS'].mean() * (crowder_df['FGA'].mean() + crowder_df['FTA'].mean() / 2))), bins = np.arange(-1, 12, 1))
 
-#TODO: CHECK ALL GROUP BYS
-
-#Average TS for SF in 2022 Playoffs according to statmuse
+#Average TS for SF in 2022 Playoffs according to statmuse (https://www.statmuse.com/nba/ask/average-true-shooting-by-position-in-2022-playoffs)
 SF_AVG_TS = .567
-#Average TS for PF in 2022 Playoffs according to statmuse
+#Average TS for PF in 2022 Playoffs according to statmuse (https://www.statmuse.com/nba/ask/average-true-shooting-by-position-in-2022-playoffs)
 PF_AVG_TS = .585
 
+#Columns needed to calculate true shooting percentage
 TS_NEEDED_COLUMNS = ['PTS', 'FGA', 'FTA']
 
 ROUND_MAP = {
@@ -52,7 +52,6 @@ def get_ts_by_series(df):
     Returns:
         ts_by_series : pd.DataFrame, the dataframe containing the true shooting percentage for each playoff series
     '''
-    #TODO: IS THIS RIGHT?
     ts_by_series = df[['Year', 'Opp', 'Series'] + TS_NEEDED_COLUMNS].groupby(['Year', 'Series', 'Opp']).apply(lambda x: calculate_groupby_ts(x))
     ts_by_series = pd.DataFrame(ts_by_series)
     ts_by_series.columns = ['TS']
@@ -100,7 +99,7 @@ def get_ts_by_year_and_round(df):
     '''
     df_copy = df.copy()
     df_copy['Round'] = df_copy['Series'].map(ROUND_MAP)
-    #Make the series column categorical and ordered
+    #Make the round column categorical and ordered
     ROUND_ORDER = ['FIRST ROUND', 'CONFERENCE SEMIFINALS', 'CONFERENCE FINALS', 'FINALS']
     df_copy['Round'] = pd.Categorical(df_copy['Round'], categories=ROUND_ORDER, ordered=True)
     ts_by_series_and_year = df_copy[['Round', 'Year'] + TS_NEEDED_COLUMNS].groupby(['Year', 'Round']).apply(lambda x: calculate_groupby_ts(x)).unstack() 
@@ -120,6 +119,21 @@ def get_ts_by_home_away(df):
     ts_by_home_away = pd.DataFrame(ts_by_home_away)
     ts_by_home_away.columns = ['TS']
     return ts_by_home_away
+
+def get_game_and_next_game_ts(df):
+    '''
+    Calculates the true shooting percentage for each game and the next game as paired data
+
+    Arguments:
+        df : pd.DataFrame, the dataframe containing the gamelogs. Expects dataframe of the form returned by etl.get_gamelogs()
+
+    Returns:
+        game_and_next_game_ts : pd.DataFrame, the dataframe containing the true shooting percentage for each game and the next game as paired data
+    '''
+    next_game_ts = df[['Year', 'TS']].groupby('Year').apply(lambda x: x.shift(-1))
+    game_and_next_game_ts = df.copy()[['TS']]
+    game_and_next_game_ts['NEXT GAME TS'] = next_game_ts['TS']
+    return game_and_next_game_ts
 
 def get_streaks(df):
     '''
